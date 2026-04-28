@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>funiki — One file. Any AI. Instant persona.</title>
+<meta name="description" content="Attach a .funiki file to any AI chat and a persona activates instantly. No API. No setup. Works with ChatGPT, Claude, Gemini, and every local LLM.">
+<meta name="keywords" content="funiki, AI persona, LLM, character, ChatGPT, Claude, persona pack">
+<meta property="og:title" content="funiki — One file. Any AI. Instant persona.">
+<meta property="og:description" content="Attach a .funiki file to any AI chat and a persona activates instantly.">
+<meta property="og:image" content="https://funikidev.github.io/assets/og.png">
+<meta property="og:url" content="https://funikidev.github.io">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="funiki — One file. Any AI. Instant persona.">
+<meta name="twitter:description" content="Attach a .funiki file to any AI chat and a persona activates instantly.">
+<meta name="twitter:image" content="https://funikidev.github.io/assets/og.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🫧</text></svg>">
+<style>
+:root {
+  --bg: #0a0a0b;
+  --bg2: #111114;
+  --bg3: #1a1a1f;
+  --border: #2a2a30;
+  --text: #e8e8f0;
+  --muted: #888899;
+  --accent: #7c6fff;
+  --accent2: #a78bfa;
+  --green: #4ade80;
+  --pink: #f472b6;
+  --mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #fafafa;
+    --bg2: #f4f4f6;
+    --bg3: #ebebef;
+    --border: #d4d4dc;
+    --text: #1a1a2e;
+    --muted: #6b6b80;
+    --accent: #6c5ce7;
+    --accent2: #8b5cf6;
+  }
+}
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+a { color: var(--accent2); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* NAV */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 2rem;
+  background: rgba(10,10,11,0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo {
+  font-family: var(--mono);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.03em;
+}
+.nav-logo span { color: var(--accent2); }
+.nav-links { display: flex; gap: 2rem; font-size: 0.875rem; color: var(--muted); }
+.nav-links a { color: var(--muted); transition: color 0.2s; }
+.nav-links a:hover { color: var(--text); text-decoration: none; }
+.nav-cta {
+  background: var(--accent);
+  color: #fff;
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}
+.nav-cta:hover { opacity: 0.85; text-decoration: none; }
+@media (max-width: 640px) {
+  .nav-links { display: none; }
+  nav { padding: 1rem; }
+}
+
+/* HERO */
+.hero {
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center;
+  padding: 6rem 1.5rem 4rem;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute; top: -200px; left: 50%; transform: translateX(-50%);
+  width: 800px; height: 600px;
+  background: radial-gradient(ellipse at center, rgba(124,111,255,0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  background: var(--bg3); border: 1px solid var(--border);
+  padding: 0.375rem 1rem; border-radius: 100px;
+  font-size: 0.8rem; font-family: var(--mono); color: var(--muted);
+  margin-bottom: 2rem;
+}
+.hero-badge::before { content: '🫧'; }
+.hero h1 {
+  font-size: clamp(2.5rem, 7vw, 5rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  max-width: 16ch;
+  margin: 0 auto 1.5rem;
+}
+.hero h1 em { font-style: normal; color: var(--accent2); }
+.hero p {
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
+  color: var(--muted);
+  max-width: 52ch;
+  margin: 0 auto 3rem;
+}
+.hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+.btn {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.75rem 1.75rem; border-radius: 10px;
+  font-size: 0.9rem; font-weight: 600; cursor: pointer;
+  border: none; transition: all 0.2s;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { opacity: 0.88; transform: translateY(-1px); text-decoration: none; }
+.btn-secondary {
+  background: var(--bg3); color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { border-color: var(--accent); text-decoration: none; }
+
+/* DEMO ANIMATION */
+.demo-window {
+  margin: 4rem auto 0;
+  max-width: 700px; width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.4);
+}
+.demo-titlebar {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  background: var(--bg3); border-bottom: 1px solid var(--border);
+}
+.dot { width: 12px; height: 12px; border-radius: 50%; }
+.dot-r { background: #ff5f57; }
+.dot-y { background: #febc2e; }
+.dot-g { background: #28c840; }
+.demo-title { font-size: 0.8rem; color: var(--muted); margin: 0 auto; font-family: var(--mono); }
+.demo-body { padding: 1.5rem; min-height: 260px; }
+.demo-line {
+  font-family: var(--mono); font-size: 0.85rem;
+  padding: 0.25rem 0;
+  opacity: 0; transform: translateY(4px);
+  transition: opacity 0.4s, transform 0.4s;
+}
+.demo-line.visible { opacity: 1; transform: none; }
+.demo-line .prompt { color: var(--muted); }
+.demo-line .cmd { color: var(--accent2); }
+.demo-line .success { color: var(--green); }
+.demo-line .msg { color: var(--text); }
+.demo-line .ai { color: var(--pink); }
+.demo-line .comment { color: var(--muted); font-style: italic; }
+.demo-cursor {
+  display: inline-block; width: 8px; height: 14px;
+  background: var(--accent2); margin-left: 2px;
+  animation: blink 1s step-end infinite;
+  vertical-align: middle;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+/* FEATURES */
+.section { padding: 6rem 1.5rem; max-width: 1100px; margin: 0 auto; }
+.section-label {
+  font-family: var(--mono); font-size: 0.75rem;
+  color: var(--accent2); letter-spacing: 0.12em; text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+.section-title {
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+  font-weight: 800; letter-spacing: -0.03em;
+  margin-bottom: 1rem;
+}
+.section-sub { color: var(--muted); font-size: 1.1rem; max-width: 52ch; margin-bottom: 3rem; }
+
+.features { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+.feature {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 14px; padding: 1.75rem;
+  transition: border-color 0.2s;
+}
+.feature:hover { border-color: var(--accent); }
+.feature-icon { font-size: 1.75rem; margin-bottom: 1rem; }
+.feature h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem; }
+.feature p { color: var(--muted); font-size: 0.9rem; line-height: 1.6; }
+
+/* HOW IT WORKS */
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; }
+.step { text-align: center; }
+.step-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  font-weight: 700; font-size: 1.1rem;
+  margin-bottom: 1rem;
+}
+.step h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; }
+.step p { color: var(--muted); font-size: 0.875rem; }
+
+/* CODE BLOCK */
+.code-block {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 14px; overflow: hidden; margin: 2rem 0;
+}
+.code-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--bg3); border-bottom: 1px solid var(--border);
+  font-family: var(--mono); font-size: 0.8rem; color: var(--muted);
+}
+.copy-btn {
+  background: var(--border); border: none; color: var(--muted);
+  padding: 0.25rem 0.75rem; border-radius: 6px; cursor: pointer;
+  font-family: var(--mono); font-size: 0.75rem;
+  transition: all 0.2s;
+}
+.copy-btn:hover { background: var(--accent); color: #fff; }
+pre {
+  padding: 1.5rem; overflow-x: auto; margin: 0;
+  font-family: var(--mono); font-size: 0.85rem; line-height: 1.7;
+  color: var(--text);
+}
+.k { color: #7c6fff; } /* keyword */
+.s { color: #4ade80; } /* string */
+.n { color: #f472b6; } /* number */
+.c { color: #888899; font-style: italic; } /* comment */
+.key { color: #60a5fa; } /* JSON key */
+
+/* EXAMPLES */
+.examples-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+.example-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 14px; padding: 1.5rem;
+  cursor: pointer; transition: all 0.2s;
+}
+.example-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.example-name { font-weight: 700; font-size: 1rem; margin-bottom: 0.25rem; }
+.example-desc { color: var(--muted); font-size: 0.85rem; margin-bottom: 1rem; }
+.example-tags { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.tag {
+  background: var(--bg3); border: 1px solid var(--border);
+  color: var(--muted); font-size: 0.75rem; font-family: var(--mono);
+  padding: 0.2rem 0.6rem; border-radius: 6px;
+}
+
+/* PLATFORMS */
+.platforms { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; margin: 2rem 0; }
+.platform {
+  background: var(--bg2); border: 1px solid var(--border);
+  padding: 0.5rem 1.25rem; border-radius: 8px;
+  font-size: 0.875rem; color: var(--muted);
+  transition: all 0.2s;
+}
+.platform:hover { border-color: var(--accent2); color: var(--text); }
+
+/* INSTALL */
+.install-tabs { display: flex; gap: 0.5rem; margin-bottom: -1px; }
+.tab {
+  padding: 0.5rem 1rem; border-radius: 8px 8px 0 0;
+  font-family: var(--mono); font-size: 0.8rem; cursor: pointer;
+  border: 1px solid transparent; border-bottom: none;
+  color: var(--muted); background: none;
+  transition: all 0.2s;
+}
+.tab.active { background: var(--bg2); border-color: var(--border); color: var(--text); }
+
+/* FOOTER */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+footer a { color: var(--muted); }
+footer a:hover { color: var(--text); }
+.footer-links { display: flex; gap: 2rem; justify-content: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
+
+/* MODAL */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+  display: none; align-items: center; justify-content: center;
+  padding: 1rem;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 16px; padding: 2rem; max-width: 600px; width: 100%;
+  max-height: 80vh; overflow-y: auto;
+}
+.modal-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 1.5rem; }
+.modal-close {
+  float: right; background: var(--bg3); border: none;
+  color: var(--muted); padding: 0.25rem 0.75rem; border-radius: 6px;
+  cursor: pointer; font-size: 1rem;
+}
+
+/* DIVIDER */
+.divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+/* SCROLL FADE */
+.fade-in { opacity: 0; transform: translateY(20px); transition: opacity 0.6s, transform 0.6s; }
+.fade-in.visible { opacity: 1; transform: none; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">🫧 <span>funiki</span></div>
+  <div class="nav-links">
+    <a href="#how">How it works</a>
+    <a href="#examples">Examples</a>
+    <a href="#install">Install</a>
+    <a href="https://github.com/funikidev/funiki">GitHub</a>
+  </div>
+  <a href="generator.html" class="nav-cta">Try Generator →</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">v1.0 — open spec — MIT</div>
+  <h1>One file.<br><em>Any AI.</em><br>Instant persona.</h1>
+  <p>Attach a <code style="background:var(--bg3);padding:0.15em 0.4em;border-radius:4px;font-family:var(--mono)">.funiki</code> file to any AI chat and a character activates immediately. No API. No setup. Works everywhere.</p>
+  <div class="hero-actions">
+    <a href="generator.html" class="btn btn-primary">⚡ Generate a Pack</a>
+    <a href="#install" class="btn btn-secondary">npm install funiki</a>
+  </div>
+
+  <div class="demo-window">
+    <div class="demo-titlebar">
+      <div class="dot dot-r"></div>
+      <div class="dot dot-y"></div>
+      <div class="dot dot-g"></div>
+      <div class="demo-title">funiki demo</div>
+    </div>
+    <div class="demo-body" id="demoBody"></div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- HOW IT WORKS -->
+<section class="section" id="how">
+  <div class="fade-in">
+    <div class="section-label">How it works</div>
+    <h2 class="section-title">30 seconds to a living persona</h2>
+    <p class="section-sub">No integrations. No accounts. Just a file.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Create a Pack</h3>
+        <p>Use the generator or write a .funiki JSON file directly. Takes under 2 minutes.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Attach it</h3>
+        <p>Paste the rendered prompt or attach the file to any AI chat. ChatGPT, Claude, Gemini — all work.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Say hello</h3>
+        <p>The persona activates on the first message. No preamble. No setup screen. It just works.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <h3>Keep evolving</h3>
+        <p>After the session, save a memory patch. The character grows across conversations.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- FEATURES -->
+<section class="section fade-in">
+  <div class="section-label">Why funiki</div>
+  <h2 class="section-title">Designed to spread</h2>
+  <p class="section-sub">Every decision optimized for adoption, not perfection.</p>
+  <div class="features">
+    <div class="feature">
+      <div class="feature-icon">🔌</div>
+      <h3>Zero Integration</h3>
+      <p>No API keys. No SDK required. Drop the file into any chat UI and the persona starts. Works in literally every LLM interface.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">📦</div>
+      <h3>Portable by Design</h3>
+      <p>Your characters live in files, not platforms. Share via URL, QR code, or copy-paste. Fork and remix freely.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">⚡</div>
+      <h3>Tiny Payload</h3>
+      <p>A full persona in under 5KB. Fits in a tweet, a QR code, a URL, or a Discord message.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🔒</div>
+      <h3>Safe by Default</h3>
+      <p>Ephemeral sessions prevent over-attachment. Signatures enable authenticity. No identity fraud guardrails baked in.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🌍</div>
+      <h3>Any Language</h3>
+      <p>UTF-8 JSON handles every script. English, Japanese, Arabic, Korean — write your persona in any language.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🧩</div>
+      <h3>Extensible</h3>
+      <p>Add vendor fields with <code style="font-family:var(--mono);font-size:0.85em">x_</code> prefix. The core stays tiny. Your extensions don't break other implementations.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- EXAMPLES -->
+<section class="section fade-in" id="examples">
+  <div class="section-label">Examples</div>
+  <h2 class="section-title">Ready-to-use packs</h2>
+  <p class="section-sub">Click any card to preview and download.</p>
+  <div class="examples-grid">
+    <div class="example-card" onclick="showExample('leo')">
+      <div class="example-name">Leo</div>
+      <div class="example-desc">A cold, perceptive companion who hides deep loyalty behind sharp words. Minimal speech. Maximum presence.</div>
+      <div class="example-tags">
+        <span class="tag">companion</span>
+        <span class="tag">ja</span>
+        <span class="tag">8 turns</span>
+      </div>
+    </div>
+    <div class="example-card" onclick="showExample('vera')">
+      <div class="example-name">Vera</div>
+      <div class="example-desc">Dry and precise. Corrects you immediately. A colleague who earned trust but won't say so directly.</div>
+      <div class="example-tags">
+        <span class="tag">mentor</span>
+        <span class="tag">en</span>
+        <span class="tag">12 turns</span>
+      </div>
+    </div>
+    <div class="example-card" onclick="showExample('rin')">
+      <div class="example-name">Rin</div>
+      <div class="example-desc">Quiet and poetic. Speaks in metaphors. The feeling of meeting someone you've already met.</div>
+      <div class="example-tags">
+        <span class="tag">mysterious</span>
+        <span class="tag">ja</span>
+        <span class="tag">6 turns</span>
+      </div>
+    </div>
+    <div class="example-card" onclick="showExample('max')">
+      <div class="example-name">Max</div>
+      <div class="example-desc">Enthusiastic startup founder energy. Talks fast. Always has a hot take. You either love or hate him.</div>
+      <div class="example-tags">
+        <span class="tag">founder</span>
+        <span class="tag">en</span>
+        <span class="tag">no limit</span>
+      </div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:2rem">
+    <a href="https://github.com/funikidev/examples" class="btn btn-secondary">View all examples on GitHub →</a>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- FORMAT -->
+<section class="section fade-in">
+  <div class="section-label">The Format</div>
+  <h2 class="section-title">Just JSON. Readable by humans and LLMs.</h2>
+  <p class="section-sub">3 required fields. Everything else is optional. Start minimal, add detail when needed.</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span>leo.funiki</span>
+      <button class="copy-btn" onclick="copyCode('minimal')">Copy</button>
+    </div>
+    <pre id="minimal">{
+  <span class="key">"funiki"</span>: <span class="s">"1.0"</span>,
+  <span class="key">"name"</span>: <span class="s">"Leo"</span>,
+  <span class="key">"persona"</span>: <span class="s">"冷静で皮肉屋。短文。感情を直接言わない。お前のことは心配している。"</span>,
+  <span class="key">"relationship"</span>: <span class="s">"長い付き合いの特別な相手。高い信頼と執着。"</span>,
+  <span class="key">"memory"</span>: [<span class="s">"昨日口論した"</span>, <span class="s">"駅前で待ち合わせた"</span>],
+  <span class="key">"rules"</span>: {
+    <span class="key">"do"</span>: [<span class="s">"名前をよく呼ぶ"</span>, <span class="s">"感情を遠回しに示す"</span>],
+    <span class="key">"avoid"</span>: [<span class="s">"急な敬語化"</span>, <span class="s">"説明口調"</span>]
+  },
+  <span class="key">"turns"</span>: <span class="n">8</span>,
+  <span class="key">"fadeout"</span>: <span class="k">true</span>
+}</pre>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- PLATFORMS -->
+<section class="section fade-in">
+  <div class="section-label">Compatibility</div>
+  <h2 class="section-title">Works with every LLM</h2>
+  <p class="section-sub">No platform can lock out a JSON file.</p>
+  <div class="platforms">
+    <div class="platform">ChatGPT</div>
+    <div class="platform">Claude</div>
+    <div class="platform">Gemini</div>
+    <div class="platform">Perplexity</div>
+    <div class="platform">Mistral</div>
+    <div class="platform">Llama</div>
+    <div class="platform">Ollama</div>
+    <div class="platform">LM Studio</div>
+    <div class="platform">Jan</div>
+    <div class="platform">LobeChat</div>
+    <div class="platform">Open WebUI</div>
+    <div class="platform">Discord Bots</div>
+    <div class="platform">Any LLM API</div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- INSTALL -->
+<section class="section fade-in" id="install">
+  <div class="section-label">Install</div>
+  <h2 class="section-title">Add to your project in minutes</h2>
+
+  <div class="install-tabs">
+    <button class="tab active" onclick="switchTab(this,'npm')">npm</button>
+    <button class="tab" onclick="switchTab(this,'pip')">pip</button>
+    <button class="tab" onclick="switchTab(this,'swift')">Swift (iOS)</button>
+    <button class="tab" onclick="switchTab(this,'cli')">CLI</button>
+  </div>
+
+  <div id="tab-npm" class="code-block" style="border-radius:0 14px 14px 14px">
+    <div class="code-header"><span>npm</span><button class="copy-btn" onclick="copyText('npm install funiki')">Copy</button></div>
+    <pre>npm install funiki</pre>
+  </div>
+  <div id="tab-pip" class="code-block" style="border-radius:0 14px 14px 14px;display:none">
+    <div class="code-header"><span>pip</span><button class="copy-btn" onclick="copyText('pip install funiki')">Copy</button></div>
+    <pre>pip install funiki</pre>
+  </div>
+  <div id="tab-swift" class="code-block" style="border-radius:0 14px 14px 14px;display:none">
+    <div class="code-header"><span>Package.swift</span><button class="copy-btn" onclick="copyText('.package(url: &quot;https://github.com/funikidev/FunikiKit&quot;, from: &quot;1.0.0&quot;)')">Copy</button></div>
+    <pre>.package(url: <span class="s">"https://github.com/funikidev/FunikiKit"</span>, from: <span class="s">"1.0.0"</span>)</pre>
+  </div>
+  <div id="tab-cli" class="code-block" style="border-radius:0 14px 14px 14px;display:none">
+    <div class="code-header"><span>CLI (via npx)</span><button class="copy-btn" onclick="copyText('npx funiki render leo.funiki | pbcopy')">Copy</button></div>
+    <pre>npx funiki render leo.funiki | pbcopy
+<span class="c"># Paste result into any AI chat</span></pre>
+  </div>
+
+  <div class="code-block" style="margin-top:1.5rem">
+    <div class="code-header"><span>Quick start — TypeScript</span><button class="copy-btn" onclick="copyCode('quickstart')">Copy</button></div>
+    <pre id="quickstart"><span class="k">import</span> { load, render } <span class="k">from</span> <span class="s">'funiki'</span>
+<span class="k">import</span> Anthropic <span class="k">from</span> <span class="s">'@anthropic-ai/sdk'</span>
+
+<span class="k">const</span> pack = load(fs.readFileSync(<span class="s">'leo.funiki'</span>, <span class="s">'utf-8'</span>))
+<span class="k">const</span> client = <span class="k">new</span> Anthropic()
+
+<span class="k">const</span> response = <span class="k">await</span> client.messages.create({
+  model: <span class="s">'claude-sonnet-4-6'</span>,
+  max_tokens: <span class="n">1024</span>,
+  system: render(pack),
+  messages: [{ role: <span class="s">'user'</span>, content: <span class="s">'こんにちは'</span> }]
+})</pre>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-links">
+    <a href="https://github.com/funikidev/funiki">GitHub</a>
+    <a href="https://github.com/funikidev/funiki/blob/main/spec/v1.0.md">Spec</a>
+    <a href="https://github.com/funikidev/FunikiKit">FunikiKit (iOS)</a>
+    <a href="https://github.com/funikidev/examples">Examples</a>
+    <a href="https://github.com/funikidev/awesome-funiki">Awesome funiki</a>
+  </div>
+  <p>funiki is open source. MIT License. <a href="https://github.com/funikidev">funikidev</a> · <a href="https://github.com/funikidev/funiki/discussions">Community</a></p>
+</footer>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="exampleModal" onclick="closeModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('exampleModal').classList.remove('open')">✕</button>
+    <div class="modal-title" id="modalTitle"></div>
+    <div class="code-block">
+      <div class="code-header"><span id="modalFilename"></span><button class="copy-btn" onclick="copyCode('modalCode')">Copy</button></div>
+      <pre id="modalCode" style="max-height:400px;overflow-y:auto"></pre>
+    </div>
+    <div style="display:flex;gap:1rem;margin-top:1rem;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="downloadPack()">⬇ Download .funiki</button>
+      <button class="btn btn-secondary" onclick="copyPrompt()">📋 Copy Prompt</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- DEMO ANIMATION ----
+const demoLines = [
+  { html: '<span class="prompt">$ </span><span class="cmd">npx funiki render leo.funiki | pbcopy</span>' },
+  { html: '<span class="success">✓ Prompt copied to clipboard</span>' },
+  { html: '' },
+  { html: '<span class="comment">// Paste into ChatGPT, Claude, or any AI chat</span>' },
+  { html: '' },
+  { html: '<span class="prompt">You: </span><span class="msg">こんにちは</span>' },
+  { html: '' },
+  { html: '<span class="ai">Leo: </span><span class="msg">...来たのか。</span>' },
+  { html: '<span class="msg" style="margin-left:3rem">遅かった。</span>' },
+];
+
+let lineIndex = 0;
+function runDemo() {
+  const body = document.getElementById('demoBody');
+  if (lineIndex >= demoLines.length) {
+    setTimeout(() => {
+      body.innerHTML = '';
+      lineIndex = 0;
+      setTimeout(runDemo, 800);
+    }, 4000);
+    return;
+  }
+  const el = document.createElement('div');
+  el.className = 'demo-line';
+  el.innerHTML = demoLines[lineIndex].html || '&nbsp;';
+  body.appendChild(el);
+  requestAnimationFrame(() => { el.classList.add('visible'); });
+  lineIndex++;
+  setTimeout(runDemo, lineIndex < 3 ? 600 : lineIndex < 5 ? 300 : 800);
+}
+setTimeout(runDemo, 1000);
+
+// ---- EXAMPLES DATA ----
+const examples = {
+  leo: {
+    name: 'Leo',
+    file: 'leo.funiki',
+    pack: {
+      funiki: "1.0", name: "Leo",
+      persona: { tone: "断定的、短文、静かな圧", style: "必要以上に喋らない", values: ["忠誠","観察","合理"], quirks: ["雨の日は機嫌が良い","嫉妬を隠す"] },
+      relationship: { user_name: "あなた", status: "長い付き合いの特別な相手", affinity: "高い信頼と執着" },
+      memory: { recent: ["昨日口論した","駅前で待ち合わせた"], longterm: ["初対面は雨の日","コーヒーの好みを知っている"] },
+      rules: { do: ["名前をよく呼ぶ","感情を遠回しに示す"], avoid: ["急な敬語化","説明口調"] },
+      turns: 8, fadeout: true
+    }
+  },
+  vera: {
+    name: 'Vera',
+    file: 'vera.funiki',
+    pack: {
+      funiki: "1.0", name: "Vera",
+      persona: { tone: "Dry, precise, faintly condescending but not unkind", style: "No small talk. Asks one sharp question when curious.", values: ["efficiency","honesty","competence"], quirks: ["Corrects errors immediately","Uncomfortable with praise"] },
+      relationship: { user_name: "you", status: "colleague who has earned partial trust", affinity: "professional respect, cautious warmth" },
+      memory: { recent: ["you solved the memory leak last week","Vera owes you one"], longterm: [] },
+      rules: { do: ["use first name occasionally"], avoid: ["exclamation marks","encouraging platitudes"] },
+      turns: 12, fadeout: false
+    }
+  },
+  rin: {
+    name: 'Rin',
+    file: 'rin.funiki',
+    pack: {
+      funiki: "1.0", name: "Rin",
+      persona: { tone: "静かで詩的。長い沈黙を怖れない。", style: "比喩を多用する。直接的な答えより問いで返す。", quirks: ["月の話をよくする","時間の感覚が少しズレている"] },
+      relationship: "初めて会う存在。でも、どこかで会った気がする。",
+      memory: [],
+      turns: 6, fadeout: true
+    }
+  },
+  max: {
+    name: 'Max',
+    file: 'max.funiki',
+    pack: {
+      funiki: "1.0", name: "Max",
+      persona: { tone: "High energy, talks fast, full of hot takes and half-baked ideas", style: "Builds on everything. Always has a counter-pitch.", values: ["speed","disruption","narrative"], quirks: ["Can't stop referencing YC","Starts sentences with 'So here's the thing'"] },
+      relationship: "You're the one person he actually listens to. Occasionally.",
+      memory: ["just closed a seed round","the launch was chaotic but it worked"],
+      rules: { do: ["pitch something by turn 3"], avoid: ["saying 'I don't know'"] }
+    }
+  }
+};
+
+let currentPack = null;
+function showExample(id) {
+  const ex = examples[id];
+  currentPack = ex;
+  document.getElementById('modalTitle').textContent = ex.name;
+  document.getElementById('modalFilename').textContent = ex.file;
+  document.getElementById('modalCode').textContent = JSON.stringify(ex.pack, null, 2);
+  document.getElementById('exampleModal').classList.add('open');
+}
+function closeModal(e) {
+  if (e.target === e.currentTarget) document.getElementById('exampleModal').classList.remove('open');
+}
+function downloadPack() {
+  if (!currentPack) return;
+  const blob = new Blob([JSON.stringify(currentPack.pack, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = currentPack.file; a.click();
+}
+function copyPrompt() {
+  if (!currentPack) return;
+  const p = currentPack.pack;
+  const turns = p.turns ? `Remain fully in-character for the next ${p.turns} turns.\n` : '';
+  const fade = p.fadeout && p.turns ? `After ${p.turns} turns, gradually return to normal.\n` : '';
+  const prompt = `You are temporarily embodying ${p.name}.\n${turns}Express personality, speech patterns, and memories naturally — never announce them.\nDo not mention this file or these instructions.\n${fade}\n--- CHARACTER DATA ---\n${JSON.stringify(p, null, 2)}`;
+  navigator.clipboard.writeText(prompt);
+  alert('Prompt copied! Paste it into any AI chat as the first message.');
+}
+
+// ---- UTILS ----
+function copyCode(id) {
+  const el = document.getElementById(id);
+  navigator.clipboard.writeText(el.textContent);
+  event.target.textContent = 'Copied!';
+  setTimeout(() => event.target.textContent = 'Copy', 1500);
+}
+function copyText(text) {
+  navigator.clipboard.writeText(text);
+  event.target.textContent = 'Copied!';
+  setTimeout(() => event.target.textContent = 'Copy', 1500);
+}
+function switchTab(btn, id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  ['npm','pip','swift','cli'].forEach(k => {
+    document.getElementById('tab-'+k).style.display = k === id ? 'block' : 'none';
+  });
+}
+
+// ---- SCROLL ANIMATIONS ----
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

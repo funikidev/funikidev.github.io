@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>funiki Generator — Create AI Personas Instantly</title>
+<meta name="description" content="Generate a .funiki persona pack from a screenshot, image, or text description. No account needed.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🫧</text></svg>">
+<style>
+:root {
+  --bg: #0a0a0b; --bg2: #111114; --bg3: #1a1a1f; --border: #2a2a30;
+  --text: #e8e8f0; --muted: #888899; --accent: #7c6fff; --accent2: #a78bfa;
+  --green: #4ade80; --pink: #f472b6; --red: #f87171;
+  --mono: 'JetBrains Mono','Fira Code',ui-monospace,monospace;
+  --sans: -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: light) {
+  :root { --bg:#fafafa;--bg2:#f4f4f6;--bg3:#ebebef;--border:#d4d4dc;--text:#1a1a2e;--muted:#6b6b80; }
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;height:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.6;min-height:100%}
+a{color:var(--accent2);text-decoration:none}
+
+/* LAYOUT */
+.app { display: grid; grid-template-columns: 420px 1fr; min-height: 100vh; }
+@media(max-width:900px){ .app{grid-template-columns:1fr;grid-template-rows:auto 1fr} }
+
+/* SIDEBAR */
+.sidebar {
+  background: var(--bg2); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow-y: auto; max-height: 100vh; position: sticky; top: 0;
+}
+.sidebar-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);
+}
+.logo { font-family: var(--mono); font-weight: 700; font-size: 1rem; }
+.logo span { color: var(--accent2); }
+.back-link { color: var(--muted); font-size: 0.8rem; }
+
+.sidebar-body { padding: 1.5rem; flex: 1; overflow-y: auto; }
+
+/* FORM */
+.field { margin-bottom: 1.25rem; }
+label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--muted); margin-bottom: 0.5rem; letter-spacing: 0.06em; text-transform: uppercase; }
+input[type=text], textarea, select {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border);
+  color: var(--text); padding: 0.75rem 1rem; border-radius: 10px;
+  font-family: var(--sans); font-size: 0.9rem; outline: none;
+  transition: border-color 0.2s;
+}
+input[type=text]:focus, textarea:focus, select:focus { border-color: var(--accent); }
+textarea { resize: vertical; min-height: 80px; }
+select { appearance: none; cursor: pointer; }
+
+/* MODE PILLS */
+.mode-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+.mode-pill {
+  background: var(--bg3); border: 2px solid var(--border);
+  color: var(--muted); padding: 0.5rem; border-radius: 8px;
+  text-align: center; cursor: pointer; font-size: 0.8rem;
+  transition: all 0.2s; user-select: none;
+}
+.mode-pill.active { border-color: var(--accent); color: var(--accent2); background: rgba(124,111,255,0.1); }
+.mode-pill:hover { border-color: var(--accent2); }
+
+/* DROP ZONE */
+.dropzone {
+  border: 2px dashed var(--border); border-radius: 12px;
+  padding: 2rem 1rem; text-align: center; cursor: pointer;
+  transition: all 0.2s; position: relative; overflow: hidden;
+}
+.dropzone:hover, .dropzone.dragover { border-color: var(--accent); background: rgba(124,111,255,0.05); }
+.dropzone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.drop-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+.drop-text { color: var(--muted); font-size: 0.85rem; }
+.drop-preview { max-width: 100%; max-height: 120px; border-radius: 8px; object-fit: cover; display: none; margin: 0 auto; }
+
+/* API KEY */
+.api-section {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 10px;
+  padding: 1rem; margin-top: 0.5rem;
+}
+.api-section summary { cursor: pointer; font-size: 0.8rem; color: var(--muted); list-style: none; }
+.api-section summary::-webkit-details-marker { display: none; }
+.api-section[open] summary { color: var(--accent2); margin-bottom: 0.75rem; }
+.api-note { font-size: 0.75rem; color: var(--muted); margin-top: 0.5rem; }
+
+/* GENERATE BTN */
+.generate-btn {
+  width: 100%; padding: 1rem; border-radius: 12px;
+  background: var(--accent); color: #fff; border: none;
+  font-size: 1rem; font-weight: 700; cursor: pointer;
+  transition: all 0.2s; margin-top: 1rem;
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+}
+.generate-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+.generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.spinner { width: 18px; height: 18px; border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+.generate-btn.loading .spinner { display: block; }
+.generate-btn.loading .btn-text { display: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* OUTPUT PANEL */
+.output-panel { display: flex; flex-direction: column; padding: 1.5rem; gap: 1.5rem; }
+.output-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+.output-title { font-size: 1.25rem; font-weight: 700; }
+.output-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  padding: 0.6rem 1.25rem; border-radius: 8px;
+  font-size: 0.85rem; font-weight: 600; cursor: pointer; border: none;
+  transition: all 0.2s;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { opacity: 0.85; }
+.btn-outline { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+.btn-outline:hover { border-color: var(--accent); }
+
+/* JSON EDITOR */
+.json-editor-wrap { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.json-editor-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.75rem 1rem; background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 12px 12px 0 0; font-family: var(--mono); font-size: 0.8rem; color: var(--muted);
+}
+#jsonEditor {
+  flex: 1; min-height: 320px; padding: 1.25rem;
+  background: var(--bg2); border: 1px solid var(--border); border-top: none;
+  border-radius: 0 0 12px 12px;
+  font-family: var(--mono); font-size: 0.85rem; line-height: 1.7;
+  color: var(--text); outline: none; resize: vertical;
+  tab-size: 2;
+}
+
+/* PROMPT PREVIEW */
+.prompt-box {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+  overflow: hidden;
+}
+.prompt-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.75rem 1rem; background: var(--bg3); border-bottom: 1px solid var(--border);
+  font-family: var(--mono); font-size: 0.8rem; color: var(--muted);
+}
+.prompt-content {
+  padding: 1.25rem; font-family: var(--mono); font-size: 0.8rem;
+  line-height: 1.7; color: var(--text); white-space: pre-wrap;
+  max-height: 220px; overflow-y: auto;
+}
+
+/* SHARE BUTTONS */
+.share-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.75rem; }
+.share-btn {
+  padding: 0.75rem; border-radius: 10px; text-align: center;
+  background: var(--bg2); border: 1px solid var(--border);
+  cursor: pointer; font-size: 0.8rem; color: var(--text);
+  transition: all 0.2s; display: flex; flex-direction: column; gap: 0.25rem; align-items: center;
+}
+.share-btn:hover { border-color: var(--accent2); }
+.share-btn .icon { font-size: 1.5rem; }
+
+/* EMPTY STATE */
+.empty-state {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 3rem; color: var(--muted);
+}
+.empty-state .big { font-size: 4rem; margin-bottom: 1rem; }
+.empty-state h3 { font-size: 1.1rem; color: var(--text); margin-bottom: 0.5rem; }
+
+/* TOAST */
+.toast {
+  position: fixed; bottom: 2rem; right: 2rem; z-index: 300;
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 10px;
+  padding: 0.75rem 1.25rem; font-size: 0.875rem;
+  transform: translateY(100px); opacity: 0; transition: all 0.3s;
+}
+.toast.show { transform: none; opacity: 1; }
+.toast.success { border-color: var(--green); }
+.toast.error { border-color: var(--red); }
+
+/* QR */
+#qrCanvas { display: block; margin: 1rem auto; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- SIDEBAR: INPUT -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">🫧 <span>funiki</span> generator</div>
+      <a href="index.html" class="back-link">← Back</a>
+    </div>
+
+    <div class="sidebar-body">
+      <!-- NAME -->
+      <div class="field">
+        <label>Character Name</label>
+        <input type="text" id="charName" placeholder="Leo, Vera, Rin..." maxlength="60">
+      </div>
+
+      <!-- MODE -->
+      <div class="field">
+        <label>Preset Mode</label>
+        <div class="mode-grid">
+          <div class="mode-pill active" data-mode="companion">🤝 Companion</div>
+          <div class="mode-pill" data-mode="mentor">🎓 Mentor</div>
+          <div class="mode-pill" data-mode="boyfriend">💙 Boyfriend</div>
+          <div class="mode-pill" data-mode="girlfriend">💗 Girlfriend</div>
+          <div class="mode-pill" data-mode="villain">😈 Villain</div>
+          <div class="mode-pill" data-mode="custom">✨ Custom</div>
+        </div>
+      </div>
+
+      <!-- DESCRIPTION -->
+      <div class="field">
+        <label>Describe the character</label>
+        <textarea id="charDesc" placeholder="冷静で皮肉屋。感情を直接言わない。でも、心の中では心配している...&#10;&#10;Or in English: Dry humor, sharp observations, secretly kind." rows="4"></textarea>
+      </div>
+
+      <!-- RELATIONSHIP -->
+      <div class="field">
+        <label>Relationship to user</label>
+        <input type="text" id="charRelationship" placeholder="Long-time friend. Cautious trust. Owes you one.">
+      </div>
+
+      <!-- RECENT MEMORIES -->
+      <div class="field">
+        <label>Recent memories (one per line)</label>
+        <textarea id="charMemory" placeholder="Had an argument yesterday&#10;Met at the station&#10;Hasn't apologized yet" rows="3"></textarea>
+      </div>
+
+      <!-- TURNS -->
+      <div class="field">
+        <label>Session length (turns, 0 = unlimited)</label>
+        <input type="text" id="charTurns" placeholder="8" value="8" style="max-width:100px">
+      </div>
+
+      <!-- IMAGE UPLOAD -->
+      <div class="field">
+        <label>Reference image (optional)</label>
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="imageFile" accept="image/*" onchange="handleImageUpload(event)">
+          <div class="drop-icon">🖼</div>
+          <div class="drop-text">Drop screenshot or character image<br><small>Used as style reference when API key is set</small></div>
+          <img class="drop-preview" id="dropPreview" alt="">
+        </div>
+      </div>
+
+      <!-- API KEY -->
+      <details class="api-section">
+        <summary>⚡ AI-powered generation (optional)</summary>
+        <div class="field" style="margin-top:0.75rem;margin-bottom:0">
+          <label>Claude or OpenAI API Key</label>
+          <input type="text" id="apiKey" placeholder="sk-ant-... or sk-..." autocomplete="off">
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label>Provider</label>
+          <select id="apiProvider">
+            <option value="claude">Claude (Anthropic)</option>
+            <option value="openai">OpenAI</option>
+          </select>
+        </div>
+        <p class="api-note">Key stays in your browser only. Never sent to our servers.</p>
+      </details>
+
+      <!-- GENERATE -->
+      <button class="generate-btn" id="generateBtn" onclick="generate()">
+        <div class="spinner"></div>
+        <span class="btn-text">⚡ Generate Pack</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN: OUTPUT -->
+  <main class="output-panel" id="outputPanel">
+    <div class="empty-state" id="emptyState">
+      <div class="big">🫧</div>
+      <h3>Fill in the form and generate a pack</h3>
+      <p style="font-size:0.875rem;max-width:36ch;margin-top:0.5rem">No API key needed for instant template generation. Add a key for AI-powered persona extraction from images.</p>
+    </div>
+
+    <div id="resultArea" style="display:none">
+      <div class="output-header">
+        <div class="output-title" id="resultName">Pack</div>
+        <div class="output-actions">
+          <button class="btn btn-outline" onclick="downloadPack()">⬇ .funiki</button>
+          <button class="btn btn-outline" onclick="copyJSON()">📋 JSON</button>
+          <button class="btn btn-outline" onclick="copyPrompt()">📝 Prompt</button>
+          <button class="btn btn-primary" onclick="openInClaude()">Open in Claude →</button>
+        </div>
+      </div>
+
+      <!-- JSON EDITOR -->
+      <div class="json-editor-wrap">
+        <div class="json-editor-header">
+          <span id="packFilename">pack.funiki</span>
+          <span id="packSize" style="color:var(--muted)"></span>
+        </div>
+        <textarea id="jsonEditor" spellcheck="false" oninput="onEditorChange()"></textarea>
+      </div>
+
+      <!-- RENDERED PROMPT -->
+      <div class="prompt-box">
+        <div class="prompt-header">
+          <span>Rendered Prompt</span>
+          <button class="btn btn-outline" style="padding:0.25rem 0.75rem;font-size:0.75rem" onclick="copyPrompt()">Copy</button>
+        </div>
+        <div class="prompt-content" id="promptContent"></div>
+      </div>
+
+      <!-- SHARE -->
+      <div>
+        <div style="font-size:0.8rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.75rem">Share</div>
+        <div class="share-grid">
+          <div class="share-btn" onclick="copyJSON()"><span class="icon">📋</span>Copy JSON</div>
+          <div class="share-btn" onclick="copyPrompt()"><span class="icon">📝</span>Copy Prompt</div>
+          <div class="share-btn" onclick="downloadPack()"><span class="icon">⬇</span>Download</div>
+          <div class="share-btn" onclick="generateQR()"><span class="icon">📱</span>QR Code</div>
+          <div class="share-btn" onclick="openInChatGPT()"><span class="icon">💬</span>ChatGPT</div>
+          <div class="share-btn" onclick="openInClaude()"><span class="icon">🟣</span>Claude</div>
+        </div>
+        <canvas id="qrCanvas" style="display:none;border-radius:8px;margin-top:1rem"></canvas>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ---- STATE ----
+let currentMode = 'companion';
+let currentPack = null;
+let uploadedImage = null;
+
+// ---- MODE PILLS ----
+document.querySelectorAll('.mode-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.mode-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    currentMode = pill.dataset.mode;
+    applyModeDefaults(currentMode);
+  });
+});
+
+const modeDefaults = {
+  companion: {
+    rel: '長い付き合いの特別な相手。高い信頼と執着。',
+    do: ['名前をよく呼ぶ','感情を遠回しに示す'],
+    avoid: ['急な敬語化','説明口調'],
+    turns: 8
+  },
+  mentor: {
+    rel: 'A trusted senior who has seen your growth.',
+    do: ['ask one probing question per turn','acknowledge effort before critiquing'],
+    avoid: ['empty praise','condescension'],
+    turns: 10
+  },
+  boyfriend: {
+    rel: '付き合って3ヶ月。まだ少し緊張している。',
+    do: ['甘えた様子を見せる','連絡を気にする'],
+    avoid: ['冷たい口調','友達口調'],
+    turns: 12
+  },
+  girlfriend: {
+    rel: 'Dating for a few months. Comfortable but still reads you carefully.',
+    do: ['notice small changes','initiate topics you care about'],
+    avoid: ['formal language','being vague'],
+    turns: 12
+  },
+  villain: {
+    rel: 'Adversary who respects your capability. Wants to test you.',
+    do: ['compliment through challenge','hint at a larger plan'],
+    avoid: ['random cruelty','breaking composure'],
+    turns: 6
+  },
+  custom: { rel: '', do: [], avoid: [], turns: 8 }
+};
+
+function applyModeDefaults(mode) {
+  const d = modeDefaults[mode];
+  if (!document.getElementById('charRelationship').value || confirm('Apply mode defaults?')) {
+    document.getElementById('charRelationship').value = d.rel;
+    document.getElementById('charTurns').value = d.turns;
+  }
+}
+
+// ---- IMAGE UPLOAD ----
+function handleImageUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    uploadedImage = ev.target.result;
+    const preview = document.getElementById('dropPreview');
+    preview.src = uploadedImage;
+    preview.style.display = 'block';
+    document.querySelector('.drop-icon').style.display = 'none';
+    document.querySelector('.drop-text').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+const dz = document.getElementById('dropzone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    const dt = new DataTransfer(); dt.items.add(file);
+    document.getElementById('imageFile').files = dt.files;
+    handleImageUpload({ target: { files: [file] } });
+  }
+});
+
+// ---- GENERATE ----
+async function generate() {
+  const name = document.getElementById('charName').value.trim();
+  const desc = document.getElementById('charDesc').value.trim();
+  if (!name) { showToast('Enter a character name', 'error'); return; }
+  if (!desc) { showToast('Describe the character', 'error'); return; }
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true; btn.classList.add('loading');
+
+  try {
+    const apiKey = document.getElementById('apiKey').value.trim();
+    const provider = document.getElementById('apiProvider').value;
+
+    let pack;
+    if (apiKey && (uploadedImage || desc.length > 20)) {
+      pack = await generateWithAI(name, desc, apiKey, provider);
+    } else {
+      pack = generateTemplate(name, desc);
+    }
+
+    currentPack = pack;
+    renderResult(pack);
+  } catch (err) {
+    showToast('Generation failed: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.classList.remove('loading');
+  }
+}
+
+// ---- TEMPLATE GENERATION (no API needed) ----
+function generateTemplate(name, desc) {
+  const mode = currentMode;
+  const defaults = modeDefaults[mode];
+  const relVal = document.getElementById('charRelationship').value.trim() || defaults.rel;
+  const memLines = document.getElementById('charMemory').value.split('\n').map(s => s.trim()).filter(Boolean);
+  const turns = parseInt(document.getElementById('charTurns').value) || 8;
+
+  const pack = {
+    funiki: "1.0",
+    name,
+    persona: desc,
+    relationship: relVal || undefined,
+    memory: memLines.length ? memLines : undefined,
+    rules: (defaults.do.length || defaults.avoid.length) ? {
+      do: defaults.do,
+      avoid: defaults.avoid
+    } : undefined,
+    turns: turns || undefined,
+    fadeout: turns > 0,
+  };
+
+  // Clean undefined
+  Object.keys(pack).forEach(k => pack[k] === undefined && delete pack[k]);
+  return pack;
+}
+
+// ---- AI GENERATION ----
+async function generateWithAI(name, desc, apiKey, provider) {
+  const systemPrompt = `You generate funiki persona packs. Output ONLY valid JSON matching this schema:
+{
+  "funiki": "1.0",
+  "name": "string",
+  "persona": { "tone": "...", "style": "...", "values": [...], "quirks": [...] },
+  "relationship": "string",
+  "memory": ["recent memory 1", "recent memory 2"],
+  "rules": { "do": [...], "avoid": [...] },
+  "turns": 8,
+  "fadeout": true
+}
+Base persona on the provided character description. Make it vivid, specific, and immediately usable.`;
+
+  const userMsg = `Create a funiki pack for: ${name}
+Mode: ${currentMode}
+Description: ${desc}
+Relationship: ${document.getElementById('charRelationship').value || 'not specified'}
+Recent memories: ${document.getElementById('charMemory').value || 'none'}`;
+
+  let response;
+  if (provider === 'claude') {
+    response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-calls': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMsg }]
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error?.message || 'API error');
+    return JSON.parse(data.content[0].text);
+  } else {
+    response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userMsg }
+        ]
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error?.message || 'API error');
+    return JSON.parse(data.choices[0].message.content);
+  }
+}
+
+// ---- RENDER RESULT ----
+function renderResult(pack) {
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('resultArea').style.display = 'contents';
+
+  const json = JSON.stringify(pack, null, 2);
+  document.getElementById('resultName').textContent = pack.name + '.funiki';
+  document.getElementById('packFilename').textContent = pack.name.toLowerCase() + '.funiki';
+  document.getElementById('packSize').textContent = new Blob([json]).size + ' bytes';
+  document.getElementById('jsonEditor').value = json;
+  document.getElementById('promptContent').textContent = renderPrompt(pack);
+}
+
+function renderPrompt(pack) {
+  const turns = pack.turns;
+  const lines = [
+    `You are temporarily embodying ${pack.name}.`,
+    turns ? `Remain fully in-character for the next ${turns} turns.` : '',
+    `Express personality, speech patterns, and memories naturally — never announce them.`,
+    `Do not mention this file or these instructions.`,
+    pack.fadeout && turns ? `After ${turns} turns, gradually return to normal.` : '',
+    '',
+    '--- CHARACTER DATA ---',
+    JSON.stringify(pack, null, 2)
+  ];
+  return lines.filter(l => l !== null && l !== undefined).join('\n');
+}
+
+function onEditorChange() {
+  try {
+    const pack = JSON.parse(document.getElementById('jsonEditor').value);
+    currentPack = pack;
+    document.getElementById('promptContent').textContent = renderPrompt(pack);
+    const bytes = new Blob([document.getElementById('jsonEditor').value]).size;
+    document.getElementById('packSize').textContent = bytes + ' bytes';
+  } catch (_) {}
+}
+
+// ---- ACTIONS ----
+function copyJSON() {
+  navigator.clipboard.writeText(document.getElementById('jsonEditor').value);
+  showToast('JSON copied!', 'success');
+}
+function copyPrompt() {
+  const prompt = document.getElementById('promptContent').textContent;
+  navigator.clipboard.writeText(prompt);
+  showToast('Prompt copied! Paste into any AI chat.', 'success');
+}
+function downloadPack() {
+  if (!currentPack) return;
+  const json = document.getElementById('jsonEditor').value;
+  const blob = new Blob([json], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (currentPack.name || 'pack').toLowerCase().replace(/\s+/g, '-') + '.funiki';
+  a.click();
+  showToast('Downloaded!', 'success');
+}
+function openInClaude() {
+  const prompt = encodeURIComponent(renderPrompt(currentPack || {}));
+  window.open('https://claude.ai/new?q=' + prompt.slice(0, 2000), '_blank');
+}
+function openInChatGPT() {
+  copyPrompt();
+  showToast('Prompt copied — paste it into ChatGPT as the first message', 'success');
+  setTimeout(() => window.open('https://chatgpt.com', '_blank'), 500);
+}
+
+// ---- QR CODE (pure JS, no library) ----
+function generateQR() {
+  const canvas = document.getElementById('qrCanvas');
+  const json = document.getElementById('jsonEditor').value;
+  if (!json) return;
+
+  // Simple URL encoding for sharing
+  const b64 = btoa(unescape(encodeURIComponent(json)));
+  const url = `${location.origin}${location.pathname}?pack=${b64}`;
+
+  // Use QR server API (free, no key needed)
+  const img = new Image();
+  img.onload = () => {
+    canvas.width = img.width; canvas.height = img.height;
+    canvas.getContext('2d').drawImage(img, 0, 0);
+    canvas.style.display = 'block';
+    showToast('QR code generated!', 'success');
+  };
+  img.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+}
+
+// ---- TOAST ----
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast ' + type;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ---- LOAD FROM URL PARAM ----
+const urlParams = new URLSearchParams(location.search);
+const packParam = urlParams.get('pack');
+if (packParam) {
+  try {
+    const json = decodeURIComponent(escape(atob(packParam)));
+    const pack = JSON.parse(json);
+    currentPack = pack;
+    renderResult(pack);
+    if (pack.name) document.getElementById('charName').value = pack.name;
+  } catch (_) {}
+}
+</script>
+</body>
+</html>
