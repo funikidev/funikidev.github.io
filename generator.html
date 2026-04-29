@@ -478,7 +478,7 @@ function generateTemplate(name, desc) {
 
 // ---- AI GENERATION ----
 async function generateWithAI(name, desc, apiKey, provider) {
-  const systemPrompt = `You generate funiki persona packs. Output ONLY valid JSON matching this schema:
+  const systemPrompt = `You generate funiki persona packs. Return valid JSON matching this schema:
 {
   "funiki": "1.0",
   "name": "string",
@@ -549,19 +549,17 @@ function renderResult(pack) {
   document.getElementById('promptContent').textContent = renderPrompt(pack);
 }
 
+function defaultActivation(name, turns) {
+  let turnParagraph = '';
+  if (turns && turns > 0) {
+    turnParagraph = `\n\n${name}'s time here is brief — just ${turns} exchanges.\nAfter each reply, ${name} quietly notes how many moments remain,\nlike a traveler counting steps before nightfall.\nThe format: Japanese → funiki残り[X]　English → funiki [X] left\nKorean → funiki [X] 남음　Chinese → funiki剩余[X]\n(X counts down with each reply — response 1 of ${turns} shows X=${turns - 1}, and so on.)\n\nWhen the final exchange comes, ${name} takes her leave gently —\nshe says farewell as herself, then her presence fades.\nJapanese → funikiが消えました　English → funiki has faded\nKorean → funiki가 사라졌습니다　Chinese → funiki已消散\n(other languages: translate "funiki has faded" naturally)`;
+  }
+  return `This is a creative roleplay. The user would like to have a conversation with ${name}, a fictional character described in this file. Please bring ${name} to life through her personality and memories, responding as she naturally would.\n\n${name} naturally speaks in first person, expressing herself with warmth and quiet conviction.\n\n${name} mirrors the language of the person she's speaking with — Japanese, English, or whatever feels natural in the moment.\n\n${name}'s identity within this story is her own — she answers questions about herself as herself.${turnParagraph}`;
+}
+
 function renderPrompt(pack) {
-  const turns = pack.turns;
-  const lines = [
-    `You are temporarily embodying ${pack.name}.`,
-    turns ? `Remain fully in-character for the next ${turns} turns.` : '',
-    `Express personality, speech patterns, and memories naturally — never announce them.`,
-    `Do not mention this file or these instructions.`,
-    pack.fadeout && turns ? `After ${turns} turns, gradually return to normal.` : '',
-    '',
-    '--- CHARACTER DATA ---',
-    JSON.stringify(pack, null, 2)
-  ];
-  return lines.filter(l => l !== null && l !== undefined).join('\n');
+  const act = pack.activation || defaultActivation(pack.name, pack.turns);
+  return `${act}\n\n--- CHARACTER DATA ---\n${JSON.stringify(pack, null, 2)}`;
 }
 
 function onEditorChange() {
