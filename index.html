@@ -348,7 +348,7 @@ footer a:hover { color: var(--text); }
 <section class="hero">
   <div class="hero-badge">v1.0 — open spec — MIT</div>
   <h1>One file.<br><em>Any AI.</em><br>Instant persona.</h1>
-  <p>Attach a <code style="background:var(--bg3);padding:0.15em 0.4em;border-radius:4px;font-family:var(--mono)">.funiki</code> file to any AI chat and a character activates immediately. No API. No setup. Works everywhere.</p>
+  <p>Attach a <code style="background:var(--bg3);padding:0.15em 0.4em;border-radius:4px;font-family:var(--mono)">.funiki.json</code> file to any AI chat and a character activates immediately. No API. No setup. Works everywhere.</p>
   <div class="hero-actions">
     <a href="generator.html" class="btn btn-primary">⚡ Generate a Pack</a>
     <a href="#install" class="btn btn-secondary">npm install funiki</a>
@@ -392,7 +392,7 @@ footer a:hover { color: var(--text); }
       <div class="step">
         <div class="step-num">4</div>
         <h3>Keep evolving</h3>
-        <p>After the session, save a memory patch. The character grows across conversations.</p>
+        <p>Update the pack with new memories. The character grows across conversations.</p>
       </div>
     </div>
   </div>
@@ -499,7 +499,7 @@ footer a:hover { color: var(--text); }
 
   <div class="code-block">
     <div class="code-header">
-      <span>leo.funiki</span>
+      <span>leo.funiki.json</span>
       <button class="copy-btn" onclick="copyCode('minimal')">Copy</button>
     </div>
     <pre id="minimal">{
@@ -579,7 +579,7 @@ footer a:hover { color: var(--text); }
     <pre id="quickstart"><span class="k">import</span> { load, render } <span class="k">from</span> <span class="s">'funiki'</span>
 <span class="k">import</span> Anthropic <span class="k">from</span> <span class="s">'@anthropic-ai/sdk'</span>
 
-<span class="k">const</span> pack = load(fs.readFileSync(<span class="s">'leo.funiki'</span>, <span class="s">'utf-8'</span>))
+<span class="k">const</span> pack = load(fs.readFileSync(<span class="s">'leo.funiki.json'</span>, <span class="s">'utf-8'</span>))
 <span class="k">const</span> client = <span class="k">new</span> Anthropic()
 
 <span class="k">const</span> response = <span class="k">await</span> client.messages.create({
@@ -624,7 +624,7 @@ footer a:hover { color: var(--text); }
 <script>
 // ---- DEMO ANIMATION ----
 const demoLines = [
-  { html: '<span class="prompt">$ </span><span class="cmd">npx funiki render leo.funiki | pbcopy</span>' },
+  { html: '<span class="prompt">$ </span><span class="cmd">npx funiki render leo.funiki.json | pbcopy</span>' },
   { html: '<span class="success">✓ Prompt copied to clipboard</span>' },
   { html: '' },
   { html: '<span class="comment">// Paste into ChatGPT, Claude, or any AI chat</span>' },
@@ -660,7 +660,7 @@ setTimeout(runDemo, 1000);
 const examples = {
   leo: {
     name: 'Leo',
-    file: 'leo.funiki',
+    file: 'leo.funiki.json',
     pack: {
       funiki: "1.0", name: "Leo",
       persona: { tone: "断定的、短文、静かな圧", style: "必要以上に喋らない", values: ["忠誠","観察","合理"], quirks: ["雨の日は機嫌が良い","嫉妬を隠す"] },
@@ -672,7 +672,7 @@ const examples = {
   },
   vera: {
     name: 'Vera',
-    file: 'vera.funiki',
+    file: 'vera.funiki.json',
     pack: {
       funiki: "1.0", name: "Vera",
       persona: { tone: "Dry, precise, faintly condescending but not unkind", style: "No small talk. Asks one sharp question when curious.", values: ["efficiency","honesty","competence"], quirks: ["Corrects errors immediately","Uncomfortable with praise"] },
@@ -684,7 +684,7 @@ const examples = {
   },
   rin: {
     name: 'Rin',
-    file: 'rin.funiki',
+    file: 'rin.funiki.json',
     pack: {
       funiki: "1.0", name: "Rin",
       persona: { tone: "静かで詩的。長い沈黙を怖れない。", style: "比喩を多用する。直接的な答えより問いで返す。", quirks: ["月の話をよくする","時間の感覚が少しズレている"] },
@@ -695,7 +695,7 @@ const examples = {
   },
   max: {
     name: 'Max',
-    file: 'max.funiki',
+    file: 'max.funiki.json',
     pack: {
       funiki: "1.0", name: "Max",
       persona: { tone: "High energy, talks fast, full of hot takes and half-baked ideas", style: "Builds on everything. Always has a counter-pitch.", values: ["speed","disruption","narrative"], quirks: ["Can't stop referencing YC","Starts sentences with 'So here's the thing'"] },

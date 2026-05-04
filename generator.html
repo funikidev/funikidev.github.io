@@ -542,8 +542,8 @@ function renderResult(pack) {
   document.getElementById('resultArea').style.display = 'contents';
 
   const json = JSON.stringify(pack, null, 2);
-  document.getElementById('resultName').textContent = pack.name + '.funiki';
-  document.getElementById('packFilename').textContent = pack.name.toLowerCase() + '.funiki';
+  document.getElementById('resultName').textContent = pack.name + '.funiki.json';
+  document.getElementById('packFilename').textContent = pack.name.toLowerCase() + '.funiki.json';
   document.getElementById('packSize').textContent = new Blob([json]).size + ' bytes';
   document.getElementById('jsonEditor').value = json;
   document.getElementById('promptContent').textContent = renderPrompt(pack);
@@ -588,7 +588,7 @@ function downloadPack() {
   const blob = new Blob([json], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = (currentPack.name || 'pack').toLowerCase().replace(/\s+/g, '-') + '.funiki';
+  a.download = (currentPack.name || 'pack').toLowerCase().replace(/\s+/g, '-') + '.funiki.json';
   a.click();
   showToast('Downloaded!', 'success');
 }
