@@ -99,12 +99,20 @@ h1 { font-size: 1.9rem; font-weight: 700; margin-bottom: 10px; }
     return;
   }
 
-  var pack;
+  var pack, jsonStr;
   try {
     var b64 = raw.replace(/-/g, '+').replace(/_/g, '/');
     var rem = b64.length % 4;
     if (rem) b64 += '===='.slice(rem);
-    pack = JSON.parse(atob(b64));
+
+    // base64 → bytes → UTF-8 string (atob alone breaks multibyte chars like Japanese)
+    var binary = atob(b64);
+    var bytes = new Uint8Array(binary.length);
+    for (var i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    jsonStr = new TextDecoder('utf-8').decode(bytes);
+    pack = JSON.parse(jsonStr);
   } catch (e) {
     document.getElementById('content').innerHTML =
       '<p class="error">Could not decode pack data.</p>';
@@ -113,7 +121,6 @@ h1 { font-size: 1.9rem; font-weight: 700; margin-bottom: 10px; }
 
   var name = pack.name || 'pack';
   var filename = name.replace(/[\/\\:*?"<>|]/g, '-') + '.funiki.json';
-  var json = JSON.stringify(pack, null, 2);
 
   var personaText = '';
   if (typeof pack.persona === 'string') {
@@ -134,7 +141,8 @@ h1 { font-size: 1.9rem; font-weight: 700; margin-bottom: 10px; }
     '<p class="footer">powered by <a href="/">funiki</a></p>';
 
   window.dl = function () {
-    var blob = new Blob([json], { type: 'application/json' });
+    // Use original UTF-8 bytes directly to preserve exact encoding of the source pack
+    var blob = new Blob([bytes], { type: 'application/json;charset=utf-8' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = filename;
