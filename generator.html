@@ -181,9 +181,6 @@ select { appearance: none; cursor: pointer; }
 .toast.show { transform: none; opacity: 1; }
 .toast.success { border-color: var(--green); }
 .toast.error { border-color: var(--red); }
-
-/* QR */
-#qrCanvas { display: block; margin: 1rem auto; }
 </style>
 </head>
 <body>
@@ -320,11 +317,9 @@ select { appearance: none; cursor: pointer; }
           <div class="share-btn" onclick="copyJSON()"><span class="icon">📋</span>Copy JSON</div>
           <div class="share-btn" onclick="copyPrompt()"><span class="icon">📝</span>Copy Prompt</div>
           <div class="share-btn" onclick="downloadPack()"><span class="icon">⬇</span>Download</div>
-          <div class="share-btn" onclick="generateQR()"><span class="icon">📱</span>QR Code</div>
           <div class="share-btn" onclick="openInChatGPT()"><span class="icon">💬</span>ChatGPT</div>
           <div class="share-btn" onclick="openInClaude()"><span class="icon">🟣</span>Claude</div>
         </div>
-        <canvas id="qrCanvas" style="display:none;border-radius:8px;margin-top:1rem"></canvas>
       </div>
     </div>
   </main>
@@ -600,27 +595,6 @@ function openInChatGPT() {
   copyPrompt();
   showToast('Prompt copied — paste it into ChatGPT as the first message', 'success');
   setTimeout(() => window.open('https://chatgpt.com', '_blank'), 500);
-}
-
-// ---- QR CODE (pure JS, no library) ----
-function generateQR() {
-  const canvas = document.getElementById('qrCanvas');
-  const json = document.getElementById('jsonEditor').value;
-  if (!json) return;
-
-  // Simple URL encoding for sharing
-  const b64 = btoa(unescape(encodeURIComponent(json)));
-  const url = `${location.origin}${location.pathname}?pack=${b64}`;
-
-  // Use QR server API (free, no key needed)
-  const img = new Image();
-  img.onload = () => {
-    canvas.width = img.width; canvas.height = img.height;
-    canvas.getContext('2d').drawImage(img, 0, 0);
-    canvas.style.display = 'block';
-    showToast('QR code generated!', 'success');
-  };
-  img.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
 }
 
 // ---- TOAST ----
